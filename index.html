@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all your existing CSS the same) */
+/* (keep all the same CSS as before) */
 * {
   margin: 0;
   padding: 0;
@@ -285,11 +285,6 @@ body {
   background: #38a169;
 }
 
-.download-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .new-convert-btn {
   background: #667eea;
   color: white;
@@ -345,17 +340,6 @@ body {
   color: white;
   padding: 30px;
   opacity: 0.9;
-}
-
-.security-badge {
-  background: #e8f5e9;
-  border-left: 4px solid #4caf50;
-  padding: 12px;
-  border-radius: 8px;
-  margin-top: 20px;
-  font-size: 0.85rem;
-  color: #2e7d32;
-  text-align: center;
 }
 
 @keyframes fadeInDown {
@@ -465,7 +449,7 @@ body {
     <div class="result-section" id="resultSection">
       <div class="result-title" id="resultTitle"></div>
       <div class="result-details" id="resultDetails"></div>
-      <button class="download-btn" id="downloadBtn" disabled>📥 Download PDF</button>
+      <button class="download-btn" id="downloadBtn">📥 Download PDF (Instant)</button>
       <button class="new-convert-btn" id="newConvertBtn">🔄 Convert Another Document</button>
     </div>
   </div>
@@ -495,23 +479,19 @@ body {
 
   <div class="footer">
     <p>⚡ Direct download • No redirects • No popups</p>
-    <div class="security-badge">
-      🔐 Your API key is securely stored as a Vercel environment variable
-    </div>
   </div>
 </div>
 
 <script>
-// ======================== FULLY FUNCTIONAL CLIENT-SIDE CONVERTER ========================
-// Fixed progress bar - now reaches 100% properly!
+
 
 // DOM Elements
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const browseBtn = document.getElementById('browseBtn');
 const fileInfo = document.getElementById('fileInfo');
-const fileNameSpan = document.getElementById('fileName');
-const fileSizeSpan = document.getElementById('fileSize');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
 const removeFileBtn = document.getElementById('removeFile');
 const convertBtn = document.getElementById('convertBtn');
 const progressContainer = document.getElementById('progressContainer');
@@ -524,34 +504,22 @@ const conversionCountSpan = document.getElementById('conversionCount');
 const totalSizeSpan = document.getElementById('totalSize');
 
 let selectedFile = null;
-let generatedPdfBlob = null;
-let currentPdfFilename = null;
-let progressInterval = null;
-
-// Stats management
+let conversionResult = null;
 let conversionCount = parseInt(localStorage.getItem('conversionCount') || '0');
 let totalProcessedMB = parseFloat(localStorage.getItem('totalProcessedMB') || '0');
 
-function updateStatsUI() {
+function updateStats() {
   conversionCountSpan.textContent = conversionCount;
   totalSizeSpan.textContent = totalProcessedMB.toFixed(1);
 }
-updateStatsUI();
+updateStats();
 
 function saveStats(fileSizeMB) {
   conversionCount++;
   totalProcessedMB += fileSizeMB;
   localStorage.setItem('conversionCount', conversionCount);
   localStorage.setItem('totalProcessedMB', totalProcessedMB);
-  updateStatsUI();
-}
-
-function formatFileSize(bytes) {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  updateStats();
 }
 
 function handleFile(file) {
@@ -563,29 +531,15 @@ function handleFile(file) {
     return;
   }
   
-  const allowedExtensions = ['.docx', '.doc', '.pptx', '.ppt', '.xlsx', '.xls', '.txt', '.jpg', '.png', '.jpeg'];
-  const ext = '.' + file.name.split('.').pop().toLowerCase();
-  if (!allowedExtensions.includes(ext)) {
-    alert('Unsupported file type. Please upload Word, PowerPoint, Excel, Image, or Text files.');
-    return;
-  }
-  
   selectedFile = file;
-  fileNameSpan.textContent = file.name;
-  fileSizeSpan.textContent = formatFileSize(file.size);
+  fileName.textContent = file.name;
+  const sizeInKB = (file.size / 1024).toFixed(2);
+  const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+  fileSize.textContent = sizeInKB > 1024 ? `${sizeInMB} MB` : `${sizeInKB} KB`;
   fileInfo.classList.add('show');
   convertBtn.disabled = false;
   resultSection.classList.remove('success', 'error');
   resultSection.style.display = 'none';
-  generatedPdfBlob = null;
-  downloadBtn.disabled = true;
-  
-  // Clear any existing progress
-  if (progressInterval) {
-    clearInterval(progressInterval);
-    progressInterval = null;
-  }
-  progressContainer.classList.remove('show');
 }
 
 function removeFile() {
@@ -593,218 +547,135 @@ function removeFile() {
   fileInfo.classList.remove('show');
   convertBtn.disabled = true;
   fileInput.value = '';
-  generatedPdfBlob = null;
-  downloadBtn.disabled = true;
-  resultSection.classList.remove('success', 'error');
-  resultSection.style.display = 'none';
-  progressContainer.classList.remove('show');
-  if (progressInterval) {
-    clearInterval(progressInterval);
-    progressInterval = null;
-  }
 }
 
-// Start progress animation that smoothly reaches 90% then waits for completion
-function startProgressAnimation() {
-  let progress = 0;
-  progressFill.style.width = '0%';
-  progressText.textContent = 'Starting conversion...';
-  
-  if (progressInterval) clearInterval(progressInterval);
-  
-  progressInterval = setInterval(() => {
-    if (progress < 90) {
-      // Slow down as it approaches 90%
-      const increment = Math.max(0.5, (90 - progress) / 20);
-      progress = Math.min(90, progress + increment);
-      progressFill.style.width = `${progress}%`;
-      
-      // Update text based on progress
-      if (progress < 30) {
-        progressText.textContent = 'Loading document...';
-      } else if (progress < 60) {
-        progressText.textContent = 'Processing content...';
-      } else {
-        progressText.textContent = 'Generating PDF...';
-      }
+function simulateProgress(duration) {
+  let startTime = Date.now();
+  const interval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min((elapsed / duration) * 100, 95);
+    progressFill.style.width = `${progress}%`;
+    progressText.textContent = `Converting... ${Math.floor(progress)}%`;
+    
+    if (progress >= 95) {
+      clearInterval(interval);
     }
   }, 100);
+  return interval;
 }
 
-// Complete progress to 100%
-function completeProgress(success = true) {
-  if (progressInterval) {
-    clearInterval(progressInterval);
-    progressInterval = null;
+// FIXED: Direct download without redirects
+async function downloadPDFDirectly(url, filename) {
+  try {
+    // Show downloading indicator
+    downloadBtn.textContent = '⏳ Downloading...';
+    downloadBtn.disabled = true;
+    
+    // Fetch the file as blob
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Download failed');
+    
+    const blob = await response.blob();
+    
+    // Create object URL and trigger download
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Clean up
+    URL.revokeObjectURL(blobUrl);
+    
+    // Reset button
+    setTimeout(() => {
+      downloadBtn.textContent = '📥 Download PDF (Instant)';
+      downloadBtn.disabled = false;
+    }, 1000);
+    
+    return true;
+  } catch (error) {
+    console.error('Direct download failed:', error);
+    downloadBtn.textContent = '📥 Download PDF (Instant)';
+    downloadBtn.disabled = false;
+    
+    // Fallback: Use a hidden iframe (no redirect visible)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 5000);
+    
+    return false;
   }
-  
-  if (success) {
-    progressFill.style.width = '100%';
-    progressText.textContent = 'Conversion complete!';
-  } else {
-    progressFill.style.width = '0%';
-    progressText.textContent = 'Conversion failed';
-  }
 }
 
-// Load jsPDF dynamically
-function loadJSPDF() {
-  return new Promise((resolve, reject) => {
-    if (window.jspdf) {
-      resolve(window.jspdf);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-    script.onload = () => resolve(window.jspdf);
-    script.onerror = () => reject(new Error('Failed to load PDF library'));
-    document.head.appendChild(script);
-  });
-}
-
-// Image to PDF
-async function imageToPdfBlob(file) {
-  const { jsPDF } = await loadJSPDF();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const imgData = e.target.result;
-      const img = new Image();
-      img.onload = function() {
-        const pdf = new jsPDF({
-          orientation: img.width > img.height ? 'l' : 'p',
-          unit: 'mm',
-        });
-        const imgWidth = pdf.internal.pageSize.getWidth();
-        const imgHeight = (img.height * imgWidth) / img.width;
-        pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight, undefined, 'FAST');
-        const blob = pdf.output('blob');
-        resolve(blob);
-      };
-      img.onerror = reject;
-      img.src = imgData;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-// Text to PDF
-async function textToPdfBlob(file) {
-  const { jsPDF } = await loadJSPDF();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const text = e.target.result;
-      const pdf = new jsPDF();
-      const lines = pdf.splitTextToSize(text, 170);
-      pdf.text(lines, 20, 20);
-      const blob = pdf.output('blob');
-      resolve(blob);
-    };
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
-}
-
-// Office document to PDF (with metadata)
-async function officeLikeToPdfBlob(file, ext) {
-  const { jsPDF } = await loadJSPDF();
-  const pdf = new jsPDF();
-  const fileName = file.name;
-  const fileSize = formatFileSize(file.size);
-  const currentDate = new Date().toLocaleString();
-  
-  pdf.setFontSize(18);
-  pdf.text('Document Converter Pro', 20, 20);
-  pdf.setFontSize(12);
-  pdf.text(`Converted from: ${fileName}`, 20, 40);
-  pdf.text(`File Type: ${ext.toUpperCase()}`, 20, 50);
-  pdf.text(`Original Size: ${fileSize}`, 20, 60);
-  pdf.text(`Conversion Date: ${currentDate}`, 20, 70);
-  pdf.text(`Status: Successfully converted to PDF`, 20, 85);
-  pdf.setFontSize(10);
-  pdf.text('This PDF was generated from your original document while preserving essential metadata.', 20, 105);
-  pdf.text('For best results with complex layouts, ensure your file content is supported.', 20, 115);
-  
-  pdf.addPage();
-  pdf.setFontSize(14);
-  pdf.text('Conversion Summary', 20, 20);
-  pdf.setFontSize(10);
-  pdf.text(`• Original document: ${fileName}`, 20, 40);
-  pdf.text(`• Conversion engine: Browser-based PDF generator`, 20, 50);
-  pdf.text(`• All data processed locally - no uploads to external servers`, 20, 60);
-  
-  const blob = pdf.output('blob');
-  return blob;
-}
-
-// Main conversion function with fixed progress
 async function convertToPDF() {
   if (!selectedFile) return;
   
   convertBtn.disabled = true;
   progressContainer.classList.add('show');
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Uploading file...';
   
-  // Start the smooth progress animation
-  startProgressAnimation();
+  const formData = new FormData();
+  formData.append('File', selectedFile);
+  formData.append('StoreFile', 'true');
+  formData.append('Async', 'false');
+  
+  const progressInterval = simulateProgress(3000);
   
   try {
-    const fileExt = selectedFile.name.split('.').pop().toLowerCase();
-    const originalName = selectedFile.name.replace(/\.[^/.]+$/, '');
-    currentPdfFilename = `${originalName}_converted.pdf`;
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      body: formData
+    });
+    clearInterval(progressInterval);
+    progressFill.style.width = '100%';
+    progressText.textContent = 'Processing complete!';
     
-    let pdfBlob = null;
-    
-    // Perform the actual conversion
-    if (['jpg', 'jpeg', 'png'].includes(fileExt)) {
-      progressText.textContent = 'Processing image...';
-      pdfBlob = await imageToPdfBlob(selectedFile);
-    } 
-    else if (fileExt === 'txt') {
-      progressText.textContent = 'Rendering text document...';
-      pdfBlob = await textToPdfBlob(selectedFile);
-    }
-    else if (['docx', 'doc', 'pptx', 'ppt', 'xlsx', 'xls'].includes(fileExt)) {
-      progressText.textContent = `Converting ${fileExt.toUpperCase()} document...`;
-      pdfBlob = await officeLikeToPdfBlob(selectedFile, fileExt);
-    }
-    else {
-      throw new Error('Unsupported file format for conversion.');
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.Message || `HTTP ${response.status}: Conversion failed`);
     }
     
-    // Small delay to show 100% progress
-    completeProgress(true);
-    await new Promise(r => setTimeout(r, 300));
+    const data = await response.json();
     
-    generatedPdfBlob = pdfBlob;
-    const fileSizeMB = selectedFile.size / (1024 * 1024);
-    saveStats(fileSizeMB);
-    
-    // Show success result
-    resultSection.classList.add('success');
-    resultSection.style.display = 'block';
-    document.getElementById('resultTitle').innerHTML = '✅ Conversion Successful!';
-    document.getElementById('resultDetails').innerHTML = `
-      <strong>Original:</strong> ${selectedFile.name}<br>
-      <strong>Converted:</strong> ${currentPdfFilename}<br>
-      <strong>PDF Size:</strong> ${formatFileSize(pdfBlob.size)}<br>
-      <strong>Status:</strong> Ready for instant download
-    `;
-    
-    downloadBtn.disabled = false;
-    convertBtn.disabled = false;
-    
-    // Hide progress after showing completion
-    setTimeout(() => {
-      if (!progressInterval) {
+    if (data.Files && data.Files.length > 0) {
+      conversionResult = data.Files[0];
+      
+      const fileSizeMB = selectedFile.size / (1024 * 1024);
+      saveStats(fileSizeMB);
+      
+      resultSection.classList.add('success');
+      resultSection.style.display = 'block';
+      document.getElementById('resultTitle').innerHTML = '✅ Conversion Successful!';
+      document.getElementById('resultDetails').innerHTML = `
+        <strong>Original:</strong> ${selectedFile.name}<br>
+        <strong>Converted:</strong> ${conversionResult.FileName}<br>
+        <strong>Size:</strong> ${(conversionResult.FileSize / 1024).toFixed(2)} KB<br>
+        <strong>Conversion Cost:</strong> ${data.ConversionCost || 1} credit${data.ConversionCost !== 1 ? 's' : ''}
+      `;
+      
+      // Set up direct download (NO REDIRECTS!)
+      downloadBtn.onclick = () => {
+        downloadPDFDirectly(conversionResult.Url, conversionResult.FileName);
+      };
+      
+      setTimeout(() => {
         progressContainer.classList.remove('show');
-      }
-    }, 1500);
+      }, 1000);
+    } else {
+      throw new Error('No file was returned from the conversion service');
+    }
     
   } catch (error) {
     console.error('Conversion error:', error);
-    completeProgress(false);
+    clearInterval(progressInterval);
     
     resultSection.classList.add('error');
     resultSection.style.display = 'block';
@@ -812,74 +683,53 @@ async function convertToPDF() {
     document.getElementById('resultDetails').innerHTML = `
       <strong>Error:</strong> ${error.message}<br><br>
       <strong>Troubleshooting tips:</strong><br>
-      • Ensure the file format is supported (Word, PPT, Excel, Images, TXT)<br>
+      • Ensure the file format is supported<br>
       • Try a smaller file (max 50MB)<br>
-      • Check your internet connection (for PDF library)<br>
-      • For complex documents, try a simpler format
     `;
     
-    setTimeout(() => {
-      progressContainer.classList.remove('show');
-    }, 2000);
-    
+    progressContainer.classList.remove('show');
     convertBtn.disabled = false;
-    generatedPdfBlob = null;
-    downloadBtn.disabled = true;
   }
-}
-
-function downloadPdf() {
-  if (!generatedPdfBlob) {
-    alert('No PDF available. Please convert a document first.');
-    return;
-  }
-  const url = URL.createObjectURL(generatedPdfBlob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = currentPdfFilename || 'converted_document.pdf';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
 }
 
 function resetForNewConversion() {
   removeFile();
   resultSection.classList.remove('success', 'error');
   resultSection.style.display = 'none';
-  generatedPdfBlob = null;
-  downloadBtn.disabled = true;
+  conversionResult = null;
   progressContainer.classList.remove('show');
-  if (progressInterval) {
-    clearInterval(progressInterval);
-    progressInterval = null;
-  }
 }
 
-// Event listeners
+// Event Listeners
 dropZone.addEventListener('dragover', (e) => {
   e.preventDefault();
   dropZone.classList.add('drag-over');
 });
+
 dropZone.addEventListener('dragleave', () => {
   dropZone.classList.remove('drag-over');
 });
+
 dropZone.addEventListener('drop', (e) => {
   e.preventDefault();
   dropZone.classList.remove('drag-over');
   const file = e.dataTransfer.files[0];
   if (file) handleFile(file);
 });
-browseBtn.addEventListener('click', () => fileInput.click());
+
+browseBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
 fileInput.addEventListener('change', (e) => {
   if (e.target.files[0]) handleFile(e.target.files[0]);
 });
+
 removeFileBtn.addEventListener('click', removeFile);
 convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
-downloadBtn.addEventListener('click', downloadPdf);
 
-console.log('Professional Document Converter - Progress bar fixed! Now reaches 100% smoothly.');
+console.log('Document Converter Ready - Direct download enabled (no redirects)!');
 </script>
 </body>
 </html>
