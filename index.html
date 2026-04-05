@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Professional Document Converter | Convert to PDF</title>
+<style>
+/* (keep all the same CSS as before) */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  text-align: center;
+  color: white;
+  margin-bottom: 50px;
+  padding: 40px 20px;
+}
+
+.header h1 {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  animation: fadeInDown 0.8s ease;
+}
+
+.header p {
+  font-size: 1.2rem;
+  opacity: 0.95;
+}
+
+.stats-bar {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #667eea;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.main-card {
+  background: white;
+  border-radius: 20px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  margin-bottom: 30px;
+}
+
+.drop-zone {
+  border: 3px dashed #cbd5e0;
+  border-radius: 16px;
+  padding: 60px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #f7fafc;
+}
+
+.drop-zone:hover {
+  border-color: #667eea;
+  background: #edf2f7;
+  transform: translateY(-2px);
+}
+
+.drop-zone.drag-over {
+  border-color: #667eea;
+  background: #e9d8fd;
+  transform: scale(0.98);
+}
+
+.drop-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
+
+.drop-zone h3 {
+  color: #2d3748;
+  margin-bottom: 10px;
+}
+
+.drop-zone p {
+  color: #718096;
+  margin-bottom: 15px;
+}
+
+.browse-btn {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: transform 0.2s;
+}
+
+.browse-btn:hover {
+  transform: translateY(-2px);
+}
+
+.file-info {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f7fafc;
+  border-radius: 10px;
+  display: none;
+}
+
+.file-info.show {
+  display: block;
+  animation: slideIn 0.3s ease;
+}
+
+.file-details {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.file-name {
+  font-weight: 600;
+  color: #2d3748;
+  word-break: break-all;
+  flex: 1;
+}
+
+.file-size {
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.remove-file {
+  background: #fc8181;
+  color: white;
+  border: none;
+  padding: 5px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.remove-file:hover {
+  background: #f56565;
+}
+
+.convert-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 25px;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.convert-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(56, 161, 105, 0.3);
+}
+
+.convert-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.progress-container {
+  margin-top: 20px;
+  display: none;
+}
+
+.progress-container.show {
+  display: block;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #667eea, #764ba2);
+  width: 0%;
+  transition: width 0.3s;
+}
+
+.progress-text {
+  text-align: center;
+  margin-top: 10px;
+  color: #718096;
+  font-size: 0.9rem;
+}
+
+.result-section {
+  margin-top: 30px;
+  padding: 20px;
+  border-radius: 12px;
+  display: none;
+}
+
+.result-section.success {
+  display: block;
+  background: #f0fff4;
+  border: 2px solid #48bb78;
+}
+
+.result-section.error {
+  display: block;
+  background: #fff5f5;
+  border: 2px solid #fc8181;
+}
+
+.result-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 15px;
+}
+
+.result-details {
+  margin: 15px 0;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+}
+
+.download-btn {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: transform 0.2s;
+}
+
+.download-btn:hover {
+  transform: translateY(-2px);
+  background: #38a169;
+}
+
+.new-convert-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.new-convert-btn:hover {
+  transform: translateY(-2px);
+}
+
+.formats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.format-badge {
+  background: #f7fafc;
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.format-badge:hover {
+  background: #edf2f7;
+  transform: translateY(-2px);
+}
+
+.format-icon {
+  font-size: 2rem;
+  margin-bottom: 5px;
+}
+
+.format-name {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.format-ext {
+  color: #718096;
+  font-size: 0.8rem;
+}
+
+.footer {
+  text-align: center;
+  color: white;
+  padding: 30px;
+  opacity: 0.9;
+}
+
+.security-badge {
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: #2e7d32;
+  text-align: center;
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .header h1 {
+    font-size: 2rem;
+  }
+  
+  .main-card {
+    padding: 20px;
+  }
+  
+  .drop-zone {
+    padding: 40px 15px;
+  }
+  
+  .formats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🚀 Professional Document Converter</h1>
+    <p>Convert any document to PDF instantly - No redirects, just direct download!</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-number" id="conversionCount">0</div>
+      <div class="stat-label">Documents Converted</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" id="totalSize">0</div>
+      <div class="stat-label">MB Processed</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number">⚡</div>
+      <div class="stat-label">Instant Download</div>
+    </div>
+  </div>
+
+  <div class="main-card">
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-icon">📄</div>
+      <h3>Drag & Drop your document here</h3>
+      <p>or</p>
+      <button class="browse-btn" id="browseBtn">Browse Files</button>
+      <input type="file" id="fileInput" accept=".docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.jpg,.png" style="display: none;">
+      <p style="margin-top: 15px; font-size: 0.85rem;">Supported: Word, PowerPoint, Excel, Images, Text</p>
+    </div>
+
+    <div class="file-info" id="fileInfo">
+      <div class="file-details">
+        <span class="file-name" id="fileName"></span>
+        <span class="file-size" id="fileSize"></span>
+        <button class="remove-file" id="removeFile">Remove</button>
+      </div>
+    </div>
+
+    <button class="convert-btn" id="convertBtn" disabled>
+      <span>🔄</span>
+      <span>Convert to PDF</span>
+    </button>
+
+    <div class="progress-container" id="progressContainer">
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-text" id="progressText">Preparing conversion...</div>
+    </div>
+
+    <div class="result-section" id="resultSection">
+      <div class="result-title" id="resultTitle"></div>
+      <div class="result-details" id="resultDetails"></div>
+      <button class="download-btn" id="downloadBtn">📥 Download PDF (Instant)</button>
+      <button class="new-convert-btn" id="newConvertBtn">🔄 Convert Another Document</button>
+    </div>
+  </div>
+
+  <div class="formats-grid">
+    <div class="format-badge">
+      <div class="format-icon">📘</div>
+      <div class="format-name">Word</div>
+      <div class="format-ext">.docx, .doc</div>
+    </div>
+    <div class="format-badge">
+      <div class="format-icon">📊</div>
+      <div class="format-name">PowerPoint</div>
+      <div class="format-ext">.pptx, .ppt</div>
+    </div>
+    <div class="format-badge">
+      <div class="format-icon">📗</div>
+      <div class="format-name">Excel</div>
+      <div class="format-ext">.xlsx, .xls</div>
+    </div>
+    <div class="format-badge">
+      <div class="format-icon">🖼️</div>
+      <div class="format-name">Images</div>
+      <div class="format-ext">.jpg, .png</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>⚡ Direct download • No redirects • No popups</p>
+    <div class="security-badge">
+      🔐 Your API key is securely stored as a Vercel environment variable
+    </div>
+  </div>
+</div>
+
+<script>
+// API configuration - NO API KEY HERE! It's on the server!
+const API_ENDPOINT = '/api/convert';
+
+// DOM Elements
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const browseBtn = document.getElementById('browseBtn');
+const fileInfo = document.getElementById('fileInfo');
+const fileName = document.getElementById('fileName');
+const fileSize = document.getElementById('fileSize');
+const removeFileBtn = document.getElementById('removeFile');
+const convertBtn = document.getElementById('convertBtn');
+const progressContainer = document.getElementById('progressContainer');
+const progressFill = document.getElementById('progressFill');
+const progressText = document.getElementById('progressText');
+const resultSection = document.getElementById('resultSection');
+const downloadBtn = document.getElementById('downloadBtn');
+const newConvertBtn = document.getElementById('newConvertBtn');
+const conversionCountSpan = document.getElementById('conversionCount');
+const totalSizeSpan = document.getElementById('totalSize');
+
+let selectedFile = null;
+let conversionResult = null;
+let conversionCount = parseInt(localStorage.getItem('conversionCount') || '0');
+let totalProcessedMB = parseFloat(localStorage.getItem('totalProcessedMB') || '0');
+
+function updateStats() {
+  conversionCountSpan.textContent = conversionCount;
+  totalSizeSpan.textContent = totalProcessedMB.toFixed(1);
+}
+updateStats();
+
+function saveStats(fileSizeMB) {
+  conversionCount++;
+  totalProcessedMB += fileSizeMB;
+  localStorage.setItem('conversionCount', conversionCount);
+  localStorage.setItem('totalProcessedMB', totalProcessedMB);
+  updateStats();
+}
+
+function handleFile(file) {
+  if (!file) return;
+  
+  const maxSize = 50 * 1024 * 1024;
+  if (file.size > maxSize) {
+    alert('File is too large! Maximum size is 50MB.');
+    return;
+  }
+  
+  selectedFile = file;
+  fileName.textContent = file.name;
+  const sizeInKB = (file.size / 1024).toFixed(2);
+  const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
+  fileSize.textContent = sizeInKB > 1024 ? `${sizeInMB} MB` : `${sizeInKB} KB`;
+  fileInfo.classList.add('show');
+  convertBtn.disabled = false;
+  resultSection.classList.remove('success', 'error');
+  resultSection.style.display = 'none';
+}
+
+function removeFile() {
+  selectedFile = null;
+  fileInfo.classList.remove('show');
+  convertBtn.disabled = true;
+  fileInput.value = '';
+}
+
+function simulateProgress(duration) {
+  let startTime = Date.now();
+  const interval = setInterval(() => {
+    const elapsed = Date.now() - startTime;
+    const progress = Math.min((elapsed / duration) * 100, 95);
+    progressFill.style.width = `${progress}%`;
+    progressText.textContent = `Converting... ${Math.floor(progress)}%`;
+    
+    if (progress >= 95) {
+      clearInterval(interval);
+    }
+  }, 100);
+  return interval;
+}
+
+// Direct download without redirects
+async function downloadPDFDirectly(url, filename) {
+  try {
+    downloadBtn.textContent = '⏳ Downloading...';
+    downloadBtn.disabled = true;
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Download failed');
+    
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(blobUrl);
+    
+    setTimeout(() => {
+      downloadBtn.textContent = '📥 Download PDF (Instant)';
+      downloadBtn.disabled = false;
+    }, 1000);
+    
+    return true;
+  } catch (error) {
+    console.error('Direct download failed:', error);
+    downloadBtn.textContent = '📥 Download PDF (Instant)';
+    downloadBtn.disabled = false;
+    
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 5000);
+    
+    return false;
+  }
+}
+
+async function convertToPDF() {
+  if (!selectedFile) return;
+  
+  convertBtn.disabled = true;
+  progressContainer.classList.add('show');
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Uploading file...';
+  
+  const formData = new FormData();
+  formData.append('file', selectedFile); // Note: 'file' not 'File'
+  
+  const progressInterval = simulateProgress(3000);
+  
+  try {
+    // Call our secure Vercel API endpoint (API key is on the server!)
+    const response = await fetch(API_ENDPOINT, {
+      method: 'POST',
+      body: formData
+    });
+    
+    clearInterval(progressInterval);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP ${response.status}: Conversion failed`);
+    }
+    
+    const data = await response.json();
+    
+    if (data.success && data.files && data.files.length > 0) {
+      conversionResult = data.files[0];
+      
+      const fileSizeMB = selectedFile.size / (1024 * 1024);
+      saveStats(fileSizeMB);
+      
+      progressFill.style.width = '100%';
+      progressText.textContent = 'Processing complete!';
+      
+      resultSection.classList.add('success');
+      resultSection.style.display = 'block';
+      document.getElementById('resultTitle').innerHTML = '✅ Conversion Successful!';
+      document.getElementById('resultDetails').innerHTML = `
+        <strong>Original:</strong> ${selectedFile.name}<br>
+        <strong>Converted:</strong> ${conversionResult.FileName}<br>
+        <strong>Size:</strong> ${(conversionResult.FileSize / 1024).toFixed(2)} KB<br>
+        <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
+      `;
+      
+      // Set up direct download (NO REDIRECTS!)
+      downloadBtn.onclick = () => {
+        downloadPDFDirectly(conversionResult.Url, conversionResult.FileName);
+      };
+      
+      setTimeout(() => {
+        progressContainer.classList.remove('show');
+      }, 1000);
+    } else {
+      throw new Error('No file was returned from the conversion service');
+    }
+    
+  } catch (error) {
+    console.error('Conversion error:', error);
+    clearInterval(progressInterval);
+    
+    resultSection.classList.add('error');
+    resultSection.style.display = 'block';
+    document.getElementById('resultTitle').innerHTML = '❌ Conversion Failed';
+    document.getElementById('resultDetails').innerHTML = `
+      <strong>Error:</strong> ${error.message}<br><br>
+      <strong>Troubleshooting tips:</strong><br>
+      • Ensure the file format is supported<br>
+      • Try a smaller file (max 50MB)<br>
+      • Check your internet connection
+    `;
+    
+    progressContainer.classList.remove('show');
+    convertBtn.disabled = false;
+  }
+}
+
+function resetForNewConversion() {
+  removeFile();
+  resultSection.classList.remove('success', 'error');
+  resultSection.style.display = 'none';
+  conversionResult = null;
+  progressContainer.classList.remove('show');
+}
+
+// Event Listeners
+dropZone.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+
+dropZone.addEventListener('dragleave', () => {
+  dropZone.classList.remove('drag-over');
+});
+
+dropZone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+
+browseBtn.addEventListener('click', () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener('change', (e) => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+removeFileBtn.addEventListener('click', removeFile);
+convertBtn.addEventListener('click', convertToPDF);
+newConvertBtn.addEventListener('click', resetForNewConversion);
+
+console.log('Document Converter Ready - API key protected via Vercel environment variable!');
+</script>
+</body>
+</html>
