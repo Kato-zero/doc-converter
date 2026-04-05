@@ -13,7 +13,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #a8aecb 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 20px;
 }
@@ -78,25 +78,25 @@ body {
 }
 
 .drop-zone {
-  border: 3px dashed #cbd5e0;
+  border: 5px dashed #cbd5e0;
   border-radius: 16px;
-  padding: 60px 20px;
+  padding: 6px 20px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.5s ease;
   background: #f7fafc;
 }
 
 .drop-zone:hover {
-  border-color: #667eea;
+  border-color: #f90707;
   background: #edf2f7;
-  transform: translateY(-2px);
+  transform: translateY(-10px);
 }
 
 .drop-zone.drag-over {
-  border-color: #667eea;
+  border-color: #eb1017;
   background: #e9d8fd;
-  transform: scale(0.98);
+  transform: scale(1);
 }
 
 .drop-icon {
@@ -110,13 +110,13 @@ body {
 }
 
 .drop-zone p {
-  color: #718096;
+  color: #211b1b;
   margin-bottom: 15px;
 }
 
 .browse-btn {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
+  background: linear-gradient(135deg, #bcc0d3, #764ba2);
+  color: rgb(111, 29, 29);
   border: none;
   padding: 12px 30px;
   border-radius: 8px;
@@ -127,7 +127,7 @@ body {
 }
 
 .browse-btn:hover {
-  transform: translateY(-2px);
+  transform: translateY(-10px);
 }
 
 .file-info {
@@ -346,16 +346,7 @@ body {
   opacity: 0.9;
 }
 
-.security-badge {
-  background: #e8f5e9;
-  border-left: 4px solid #4caf50;
-  padding: 12px;
-  border-radius: 8px;
-  margin-top: 20px;
-  font-size: 0.85rem;
-  color: #2e7d32;
-  text-align: center;
-}
+
 
 @keyframes fadeInDown {
   from {
@@ -412,8 +403,8 @@ body {
 <body>
 <div class="container">
   <div class="header">
-    <h1>🚀 Professional Document Converter</h1>
-    <p>Convert any document to PDF instantly - No redirects, just direct download!</p>
+    <h1>Document Converter</h1>
+    <p>Convert any document to PDF instantly</p>
   </div>
 
   <div class="stats-bar">
@@ -438,7 +429,7 @@ body {
       <p>or</p>
       <button class="browse-btn" id="browseBtn">Browse Files</button>
       <input type="file" id="fileInput" accept=".docx,.doc,.pptx,.ppt,.xlsx,.xls,.txt,.jpg,.png" style="display: none;">
-      <p style="margin-top: 15px; font-size: 0.85rem;">Supported: Word, PowerPoint, Excel, Images, Text</p>
+      <p style="margin-top: 15px; font-size: 0.85rem;">Supported: Word, PowerPoint, Excel</p>
     </div>
 
     <div class="file-info" id="fileInfo">
@@ -485,26 +476,20 @@ body {
       <div class="format-name">Excel</div>
       <div class="format-ext">.xlsx, .xls</div>
     </div>
-    <div class="format-badge">
-      <div class="format-icon">🖼️</div>
-      <div class="format-name">Images</div>
-      <div class="format-ext">.jpg, .png</div>
-    </div>
+    
   </div>
 
   <div class="footer">
     <p>⚡ Direct download • No redirects • No popups</p>
-    <div class="security-badge">
-      🔐 Your API key is securely stored as a Vercel environment variable
-    </div>
+   
   </div>
 </div>
 
 <script>
-// API configuration - NO API KEY HERE! It's on the server!
+
 const API_ENDPOINT = '/api/convert.js';
 
-// DOM Elements
+
 const dropZone = document.getElementById('dropZone');
 const fileInput = document.getElementById('fileInput');
 const browseBtn = document.getElementById('browseBtn');
@@ -583,20 +568,20 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// Download function - handles ConvertAPI URLs properly
+
 async function downloadPDFDirectly(url, filename) {
   try {
-    // Show downloading indicator
+   
     downloadBtn.textContent = '⏳ Downloading...';
     downloadBtn.disabled = true;
     
-    // Fetch the file as blob
+    
     const response = await fetch(url);
     if (!response.ok) throw new Error('Download failed');
     
     const blob = await response.blob();
     
-    // Create object URL and trigger download
+    
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = blobUrl;
