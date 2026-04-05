@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all the same CSS as before) */
+/* ... (keep all your existing CSS the same) ... */
 * {
   margin: 0;
   padding: 0;
@@ -579,44 +579,45 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// Direct download without redirects
+// FIXED: Better download function with multiple fallbacks
 async function downloadPDFDirectly(url, filename) {
   try {
-    downloadBtn.textContent = '⏳ Downloading...';
-    downloadBtn.disabled = true;
+    console.log('Downloading from:', url);
     
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Download failed');
+    // Method 1: Try anchor tag with download attribute (works for same-origin)
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = blobUrl;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(blobUrl);
-    
-    setTimeout(() => {
-      downloadBtn.textContent = '📥 Download PDF (Instant)';
-      downloadBtn.disabled = false;
-    }, 1000);
+    // Method 2: If that doesn't work, try fetch
+    setTimeout(async () => {
+      try {
+        const response = await fetch(url);
+        if (response.ok) {
+          const blob = await response.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(blobUrl);
+        }
+      } catch (e) {
+        console.log('Fetch fallback failed, but link click should work');
+      }
+    }, 500);
     
     return true;
   } catch (error) {
-    console.error('Direct download failed:', error);
-    downloadBtn.textContent = '📥 Download PDF (Instant)';
-    downloadBtn.disabled = false;
-    
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    iframe.src = url;
-    document.body.appendChild(iframe);
-    setTimeout(() => {
-      document.body.removeChild(iframe);
-    }, 5000);
-    
+    console.error('Download error:', error);
+    // Last resort: open in new tab
+    window.open(url, '_blank');
     return false;
   }
 }
@@ -630,12 +631,11 @@ async function convertToPDF() {
   progressText.textContent = 'Uploading file...';
   
   const formData = new FormData();
-  formData.append('file', selectedFile); // Note: 'file' not 'File'
+  formData.append('file', selectedFile);
   
   const progressInterval = simulateProgress(3000);
   
   try {
-    // Call our secure Vercel API endpoint (API key is on the server!)
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       body: formData
@@ -669,10 +669,31 @@ async function convertToPDF() {
         <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
       `;
       
-      // Set up direct download (NO REDIRECTS!)
+      // FIXED: Simple download that works
       downloadBtn.onclick = () => {
-        downloadPDFDirectly(conversionResult.Url, conversionResult.FileName);
+        const downloadUrl = conversionResult.Url;
+        const fileName = conversionResult.FileName;
+        
+        // Try multiple methods
+        // Method 1: Direct link click
+        const a = document.createElement('a');
+        a.href = downloadUrl;
+        a.download = fileName;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Method 2: Show URL if needed
+        setTimeout(() => {
+          console.log('Download should have started. If not, URL is:', downloadUrl);
+        }, 1000);
       };
+      
+      // Auto trigger download
+      setTimeout(() => {
+        downloadBtn.click();
+      }, 500);
       
       setTimeout(() => {
         progressContainer.classList.remove('show');
