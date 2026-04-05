@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all the same CSS as before) */
+/* (keep all your existing CSS the same) */
 * {
   margin: 0;
   padding: 0;
@@ -285,6 +285,11 @@ body {
   background: #38a169;
 }
 
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .new-convert-btn {
   background: #667eea;
   color: white;
@@ -340,6 +345,17 @@ body {
   color: white;
   padding: 30px;
   opacity: 0.9;
+}
+
+.security-badge {
+  background: #e8f5e9;
+  border-left: 4px solid #4caf50;
+  padding: 12px;
+  border-radius: 8px;
+  margin-top: 20px;
+  font-size: 0.85rem;
+  color: #2e7d32;
+  text-align: center;
 }
 
 @keyframes fadeInDown {
@@ -449,7 +465,7 @@ body {
     <div class="result-section" id="resultSection">
       <div class="result-title" id="resultTitle"></div>
       <div class="result-details" id="resultDetails"></div>
-      <button class="download-btn" id="downloadBtn">📥 Download PDF (Instant)</button>
+      <button class="download-btn" id="downloadBtn" disabled>📥 Download PDF</button>
       <button class="new-convert-btn" id="newConvertBtn">🔄 Convert Another Document</button>
     </div>
   </div>
@@ -479,11 +495,15 @@ body {
 
   <div class="footer">
     <p>⚡ Direct download • No redirects • No popups</p>
+    <div class="security-badge">
+      🔐 Your API key is securely stored as a Vercel environment variable
+    </div>
   </div>
 </div>
 
 <script>
-
+// API configuration - NO API KEY HERE! It's on the server!
+const API_ENDPOINT = '/api/convert.js';
 
 // DOM Elements
 const dropZone = document.getElementById('dropZone');
@@ -564,7 +584,7 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// FIXED: Direct download without redirects
+// Download function - handles ConvertAPI URLs properly
 async function downloadPDFDirectly(url, filename) {
   try {
     // Show downloading indicator
@@ -613,7 +633,6 @@ async function downloadPDFDirectly(url, filename) {
     return false;
   }
 }
-
 async function convertToPDF() {
   if (!selectedFile) return;
   
@@ -629,7 +648,7 @@ async function convertToPDF() {
   
   const progressInterval = simulateProgress(3000);
   
-  try {
+ try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       body: formData
@@ -698,6 +717,8 @@ function resetForNewConversion() {
   resultSection.style.display = 'none';
   conversionResult = null;
   progressContainer.classList.remove('show');
+  downloadBtn.disabled = true; // Disable download button for new conversion
+  downloadBtn.onclick = null; // Remove download handler
 }
 
 // Event Listeners
@@ -729,7 +750,8 @@ removeFileBtn.addEventListener('click', removeFile);
 convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
 
-console.log('Document Converter Ready - Direct download enabled (no redirects)!');
+console.log('Document Converter Ready - API key protected via Vercel environment variable!');
+console.log('Download will only happen when you click the Download button');
 </script>
 </body>
 </html>
