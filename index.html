@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all your existing CSS the same) */
+/* (keep all your existing CSS the same as before) */
 * {
   margin: 0;
   padding: 0;
@@ -280,7 +280,7 @@ body {
   transition: transform 0.2s;
 }
 
-.download-btn:hover {
+.download-btn:hover:not(:disabled) {
   transform: translateY(-2px);
   background: #38a169;
 }
@@ -502,7 +502,7 @@ body {
 </div>
 
 <script>
-// API configuration - NO API KEY HERE! It's on the server!
+// API configuration
 const API_ENDPOINT = '/api/convert';
 
 // DOM Elements
@@ -584,33 +584,82 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// Download function - ONLY triggers when user clicks download button
-function downloadFile() {
+// FIXED: Download function that actually works with ConvertAPI
+async function downloadFile() {
   if (!conversionResult) {
     console.error('No conversion result available');
+    alert('No file available for download. Please convert a document first.');
     return;
   }
   
   const downloadUrl = conversionResult.Url;
   const fileName = conversionResult.FileName;
   
-  console.log('Manual download triggered for:', fileName);
+  console.log('Attempting to download:', fileName);
+  console.log('Download URL:', downloadUrl);
   
-  // Create a temporary anchor element and trigger download
-  const a = document.createElement('a');
-  a.href = downloadUrl;
-  a.download = fileName;
-  a.target = '_blank';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
+  // Show downloading state
+  const originalText = downloadBtn.innerHTML;
+  downloadBtn.innerHTML = '⏳ Fetching file...';
+  downloadBtn.disabled = true;
+  
+  try {
+    // Fetch the file from ConvertAPI
+    const response = await fetch(downloadUrl);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Get the file as a blob
+    const blob = await response.blob();
+    
+    // Create a blob URL
+    const blobUrl = URL.createObjectURL(blob);
+    
+    // Create a download link
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Clean up
+    URL.revokeObjectURL(blobUrl);
+    
+    console.log('Download successful!');
+    downloadBtn.innerHTML = '✅ Downloaded!';
+    
+    setTimeout(() => {
+      downloadBtn.innerHTML = originalText;
+    }, 2000);
+    
+  } catch (error) {
+    console.error('Download failed:', error);
+    
+    // Fallback: Open in new tab
+    const shouldOpen = confirm(
+      `Unable to download automatically.\n\n` +
+      `Error: ${error.message}\n\n` +
+      `Click OK to open the file in a new tab where you can save it manually.`
+    );
+    
+    if (shouldOpen) {
+      window.open(downloadUrl, '_blank');
+    }
+    
+    downloadBtn.innerHTML = originalText;
+  } finally {
+    downloadBtn.disabled = false;
+  }
 }
 
 async function convertToPDF() {
   if (!selectedFile) return;
   
   convertBtn.disabled = true;
-  downloadBtn.disabled = true; // Disable download button until conversion completes
+  downloadBtn.disabled = true;
   progressContainer.classList.add('show');
   progressFill.style.width = '0%';
   progressText.textContent = 'Uploading file...';
@@ -654,7 +703,7 @@ async function convertToPDF() {
         <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
       `;
       
-      // Enable download button and attach click handler
+      // Enable download button
       downloadBtn.disabled = false;
       downloadBtn.onclick = downloadFile;
       
@@ -691,8 +740,9 @@ function resetForNewConversion() {
   resultSection.style.display = 'none';
   conversionResult = null;
   progressContainer.classList.remove('show');
-  downloadBtn.disabled = true; // Disable download button for new conversion
-  downloadBtn.onclick = null; // Remove download handler
+  downloadBtn.disabled = true;
+  downloadBtn.onclick = null;
+  downloadBtn.innerHTML = '📥 Download PDF';
 }
 
 // Event Listeners
@@ -724,8 +774,7 @@ removeFileBtn.addEventListener('click', removeFile);
 convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
 
-console.log('Document Converter Ready - API key protected via Vercel environment variable!');
-console.log('Download will only happen when you click the Download button');
+console.log('Document Converter Ready - Click Download button to save your PDF');
 </script>
 </body>
 </html>
