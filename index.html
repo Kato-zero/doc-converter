@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all your existing CSS the same as before) */
+/* (keep all your existing CSS the same) */
 * {
   margin: 0;
   padding: 0;
@@ -280,7 +280,7 @@ body {
   transition: transform 0.2s;
 }
 
-.download-btn:hover:not(:disabled) {
+.download-btn:hover {
   transform: translateY(-2px);
   background: #38a169;
 }
@@ -502,7 +502,7 @@ body {
 </div>
 
 <script>
-// API configuration
+// API configuration - NO API KEY HERE! It's on the server!
 const API_ENDPOINT = '/api/convert';
 
 // DOM Elements
@@ -584,7 +584,7 @@ function simulateProgress(duration) {
   return interval;
 }
 
-FIXED: Direct download without redirects
+// Download function - handles ConvertAPI URLs properly
 async function downloadPDFDirectly(url, filename) {
   try {
     // Show downloading indicator
@@ -633,27 +633,11 @@ async function downloadPDFDirectly(url, filename) {
     return false;
   }
 }
-
 async function convertToPDF() {
   if (!selectedFile) return;
   
   convertBtn.disabled = true;
-  progressContainer.classList.add('show');
-  progressFill.style.width = '0%';
-  progressText.textContent = 'Uploading file...';
-  
-  const formData = new FormData();
-  formData.append('File', selectedFile);
-  formData.append('StoreFile', 'true');
-  formData.append('Async', 'false');
-  
-  const progressInterval = simulateProgress(3000);
-  
-async function convertToPDF() {
-  if (!selectedFile) return;
-  
-  convertBtn.disabled = true;
-  downloadBtn.disabled = true;
+  downloadBtn.disabled = true; // Disable download button until conversion completes
   progressContainer.classList.add('show');
   progressFill.style.width = '0%';
   progressText.textContent = 'Uploading file...';
@@ -697,7 +681,7 @@ async function convertToPDF() {
         <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
       `;
       
-      // Enable download button
+      // Enable download button and attach click handler
       downloadBtn.disabled = false;
       downloadBtn.onclick = downloadFile;
       
@@ -734,9 +718,8 @@ function resetForNewConversion() {
   resultSection.style.display = 'none';
   conversionResult = null;
   progressContainer.classList.remove('show');
-  downloadBtn.disabled = true;
-  downloadBtn.onclick = null;
-  downloadBtn.innerHTML = '📥 Download PDF';
+  downloadBtn.disabled = true; // Disable download button for new conversion
+  downloadBtn.onclick = null; // Remove download handler
 }
 
 // Event Listeners
@@ -768,7 +751,8 @@ removeFileBtn.addEventListener('click', removeFile);
 convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
 
-console.log('Document Converter Ready - Click Download button to save your PDF');
+console.log('Document Converter Ready - API key protected via Vercel environment variable!');
+console.log('Download will only happen when you click the Download button');
 </script>
 </body>
 </html>
