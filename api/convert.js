@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     
     return res.status(200).json({
       success: true,
-      files: data.files,
+      Files: data.Files,
       conversionCost: data.ConversionCost
     });
     
