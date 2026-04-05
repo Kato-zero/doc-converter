@@ -606,9 +606,6 @@ async function downloadPDFDirectly(url, filename) {
     a.click();
     document.body.removeChild(a);
     
-    // Clean up
-    URL.revokeObjectURL(blobUrl);
-    
     // Reset button
     setTimeout(() => {
       downloadBtn.textContent = '📥 Download PDF (Instant)';
@@ -751,7 +748,6 @@ convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
 
 console.log('Document Converter Ready - API key protected via Vercel environment variable!');
-console.log('Download will only happen when you click the Download button');
 </script>
 </body>
 </html>
