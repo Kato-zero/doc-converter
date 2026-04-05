@@ -649,7 +649,7 @@ async function convertToPDF() {
     
     // Final progress to 100%
     clearInterval(interval);
-    progressFill.style.width = '100%';
+    progressFill.style.width = '90%';
     progressText.textContent = 'Finalizing PDF...';
     await new Promise(r => setTimeout(r, 300));
     
