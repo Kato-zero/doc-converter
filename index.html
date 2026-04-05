@@ -637,39 +637,39 @@ async function convertToPDF() {
   if (!selectedFile) return;
   
   convertBtn.disabled = true;
-  downloadBtn.disabled = true; // Disable download button until conversion completes
   progressContainer.classList.add('show');
   progressFill.style.width = '0%';
   progressText.textContent = 'Uploading file...';
   
   const formData = new FormData();
-  formData.append('file', selectedFile);
+  formData.append('File', selectedFile);
+  formData.append('StoreFile', 'true');
+  formData.append('Async', 'false');
   
   const progressInterval = simulateProgress(3000);
   
   try {
-    const response = await fetch(API_ENDPOINT, {
+    const response = await fetch(`${API_URL}?token=${API_SECRET}`, {
       method: 'POST',
       body: formData
     });
     
     clearInterval(progressInterval);
+    progressFill.style.width = '100%';
+    progressText.textContent = 'Processing complete!';
     
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP ${response.status}: Conversion failed`);
+      throw new Error(errorData.Message || `HTTP ${response.status}: Conversion failed`);
     }
     
     const data = await response.json();
     
-    if (data.success && data.files && data.files.length > 0) {
-      conversionResult = data.files[0];
+    if (data.Files && data.Files.length > 0) {
+      conversionResult = data.Files[0];
       
       const fileSizeMB = selectedFile.size / (1024 * 1024);
       saveStats(fileSizeMB);
-      
-      progressFill.style.width = '100%';
-      progressText.textContent = 'Processing complete!';
       
       resultSection.classList.add('success');
       resultSection.style.display = 'block';
@@ -678,12 +678,13 @@ async function convertToPDF() {
         <strong>Original:</strong> ${selectedFile.name}<br>
         <strong>Converted:</strong> ${conversionResult.FileName}<br>
         <strong>Size:</strong> ${(conversionResult.FileSize / 1024).toFixed(2)} KB<br>
-        <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
+        <strong>Conversion Cost:</strong> ${data.ConversionCost || 1} credit${data.ConversionCost !== 1 ? 's' : ''}
       `;
       
-      // Enable download button and attach click handler
-      downloadBtn.disabled = false;
-      downloadBtn.onclick = downloadFile;
+      // Set up direct download (NO REDIRECTS!)
+      downloadBtn.onclick = () => {
+        downloadPDFDirectly(conversionResult.Url, conversionResult.FileName);
+      };
       
       setTimeout(() => {
         progressContainer.classList.remove('show');
@@ -704,7 +705,6 @@ async function convertToPDF() {
       <strong>Troubleshooting tips:</strong><br>
       • Ensure the file format is supported<br>
       • Try a smaller file (max 50MB)<br>
-      • Check your internet connection
     `;
     
     progressContainer.classList.remove('show');
