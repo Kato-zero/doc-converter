@@ -584,43 +584,24 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// FIXED: Download function that actually works with ConvertAPI
-async function downloadFile() {
-  if (!conversionResult) {
-    console.error('No conversion result available');
-    alert('No file available for download. Please convert a document first.');
-    return;
-  }
-  
-  const downloadUrl = conversionResult.Url;
-  const fileName = conversionResult.FileName;
-  
-  console.log('Attempting to download:', fileName);
-  console.log('Download URL:', downloadUrl);
-  
-  // Show downloading state
-  const originalText = downloadBtn.innerHTML;
-  downloadBtn.innerHTML = '⏳ Fetching file...';
-  downloadBtn.disabled = true;
-  
+FIXED: Direct download without redirects
+async function downloadPDFDirectly(url, filename) {
   try {
-    // Fetch the file from ConvertAPI
-    const response = await fetch(downloadUrl);
+    // Show downloading indicator
+    downloadBtn.textContent = '⏳ Downloading...';
+    downloadBtn.disabled = true;
     
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
+    // Fetch the file as blob
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Download failed');
     
-    // Get the file as a blob
     const blob = await response.blob();
     
-    // Create a blob URL
+    // Create object URL and trigger download
     const blobUrl = URL.createObjectURL(blob);
-    
-    // Create a download link
     const a = document.createElement('a');
     a.href = blobUrl;
-    a.download = fileName;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -628,33 +609,46 @@ async function downloadFile() {
     // Clean up
     URL.revokeObjectURL(blobUrl);
     
-    console.log('Download successful!');
-    downloadBtn.innerHTML = '✅ Downloaded!';
-    
+    // Reset button
     setTimeout(() => {
-      downloadBtn.innerHTML = originalText;
-    }, 2000);
+      downloadBtn.textContent = '📥 Download PDF (Instant)';
+      downloadBtn.disabled = false;
+    }, 1000);
     
+    return true;
   } catch (error) {
-    console.error('Download failed:', error);
-    
-    // Fallback: Open in new tab
-    const shouldOpen = confirm(
-      `Unable to download automatically.\n\n` +
-      `Error: ${error.message}\n\n` +
-      `Click OK to open the file in a new tab where you can save it manually.`
-    );
-    
-    if (shouldOpen) {
-      window.open(downloadUrl, '_blank');
-    }
-    
-    downloadBtn.innerHTML = originalText;
-  } finally {
+    console.error('Direct download failed:', error);
+    downloadBtn.textContent = '📥 Download PDF (Instant)';
     downloadBtn.disabled = false;
+    
+    // Fallback: Use a hidden iframe (no redirect visible)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 5000);
+    
+    return false;
   }
 }
 
+async function convertToPDF() {
+  if (!selectedFile) return;
+  
+  convertBtn.disabled = true;
+  progressContainer.classList.add('show');
+  progressFill.style.width = '0%';
+  progressText.textContent = 'Uploading file...';
+  
+  const formData = new FormData();
+  formData.append('File', selectedFile);
+  formData.append('StoreFile', 'true');
+  formData.append('Async', 'false');
+  
+  const progressInterval = simulateProgress(3000);
+  
 async function convertToPDF() {
   if (!selectedFile) return;
   
