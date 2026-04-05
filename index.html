@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* ... (keep all your existing CSS the same) ... */
+/* (keep all your existing CSS the same) */
 * {
   margin: 0;
   padding: 0;
@@ -285,6 +285,11 @@ body {
   background: #38a169;
 }
 
+.download-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .new-convert-btn {
   background: #667eea;
   color: white;
@@ -460,7 +465,7 @@ body {
     <div class="result-section" id="resultSection">
       <div class="result-title" id="resultTitle"></div>
       <div class="result-details" id="resultDetails"></div>
-      <button class="download-btn" id="downloadBtn">📥 Download PDF (Instant)</button>
+      <button class="download-btn" id="downloadBtn" disabled>📥 Download PDF</button>
       <button class="new-convert-btn" id="newConvertBtn">🔄 Convert Another Document</button>
     </div>
   </div>
@@ -579,53 +584,33 @@ function simulateProgress(duration) {
   return interval;
 }
 
-// FIXED: Better download function with multiple fallbacks
-async function downloadPDFDirectly(url, filename) {
-  try {
-    console.log('Downloading from:', url);
-    
-    // Method 1: Try anchor tag with download attribute (works for same-origin)
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Method 2: If that doesn't work, try fetch
-    setTimeout(async () => {
-      try {
-        const response = await fetch(url);
-        if (response.ok) {
-          const blob = await response.blob();
-          const blobUrl = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = blobUrl;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(blobUrl);
-        }
-      } catch (e) {
-        console.log('Fetch fallback failed, but link click should work');
-      }
-    }, 500);
-    
-    return true;
-  } catch (error) {
-    console.error('Download error:', error);
-    // Last resort: open in new tab
-    window.open(url, '_blank');
-    return false;
+// Download function - ONLY triggers when user clicks download button
+function downloadFile() {
+  if (!conversionResult) {
+    console.error('No conversion result available');
+    return;
   }
+  
+  const downloadUrl = conversionResult.Url;
+  const fileName = conversionResult.FileName;
+  
+  console.log('Manual download triggered for:', fileName);
+  
+  // Create a temporary anchor element and trigger download
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = fileName;
+  a.target = '_blank';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 async function convertToPDF() {
   if (!selectedFile) return;
   
   convertBtn.disabled = true;
+  downloadBtn.disabled = true; // Disable download button until conversion completes
   progressContainer.classList.add('show');
   progressFill.style.width = '0%';
   progressText.textContent = 'Uploading file...';
@@ -669,31 +654,9 @@ async function convertToPDF() {
         <strong>Conversion Cost:</strong> ${data.conversionCost || 1} credit${data.conversionCost !== 1 ? 's' : ''}
       `;
       
-      // FIXED: Simple download that works
-      downloadBtn.onclick = () => {
-        const downloadUrl = conversionResult.Url;
-        const fileName = conversionResult.FileName;
-        
-        // Try multiple methods
-        // Method 1: Direct link click
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = fileName;
-        a.target = '_blank';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        
-        // Method 2: Show URL if needed
-        setTimeout(() => {
-          console.log('Download should have started. If not, URL is:', downloadUrl);
-        }, 1000);
-      };
-      
-      // Auto trigger download
-      setTimeout(() => {
-        downloadBtn.click();
-      }, 500);
+      // Enable download button and attach click handler
+      downloadBtn.disabled = false;
+      downloadBtn.onclick = downloadFile;
       
       setTimeout(() => {
         progressContainer.classList.remove('show');
@@ -728,6 +691,8 @@ function resetForNewConversion() {
   resultSection.style.display = 'none';
   conversionResult = null;
   progressContainer.classList.remove('show');
+  downloadBtn.disabled = true; // Disable download button for new conversion
+  downloadBtn.onclick = null; // Remove download handler
 }
 
 // Event Listeners
@@ -760,6 +725,7 @@ convertBtn.addEventListener('click', convertToPDF);
 newConvertBtn.addEventListener('click', resetForNewConversion);
 
 console.log('Document Converter Ready - API key protected via Vercel environment variable!');
+console.log('Download will only happen when you click the Download button');
 </script>
 </body>
 </html>
