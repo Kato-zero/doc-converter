@@ -2,7 +2,7 @@
 export default async function handler(req, res) {
   // Enable CORS for your frontend
   const allowedOrigins = [
-    'https://your-project.vercel.app',
+    'https://doc-converter-wheat.vercel.app/',
     'http://localhost:3000'
   ];
   
