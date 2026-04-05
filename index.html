@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Professional Document Converter | Convert to PDF</title>
 <style>
-/* (keep all your existing CSS the same) */
 * {
   margin: 0;
   padding: 0;
@@ -630,6 +629,7 @@ async function downloadPDFDirectly(url, filename) {
     return false;
   }
 }
+
 async function convertToPDF() {
   if (!selectedFile) return;
   
@@ -645,7 +645,7 @@ async function convertToPDF() {
   
   const progressInterval = simulateProgress(3000);
   
- try {
+  try {
     const response = await fetch(API_ENDPOINT, {
       method: 'POST',
       body: formData
@@ -676,6 +676,9 @@ async function convertToPDF() {
         <strong>Size:</strong> ${(conversionResult.FileSize / 1024).toFixed(2)} KB<br>
         <strong>Conversion Cost:</strong> ${data.ConversionCost || 1} credit${data.ConversionCost !== 1 ? 's' : ''}
       `;
+      
+      // FIX: Ensure the download button is enabled!
+      downloadBtn.disabled = false; 
       
       // Set up direct download (NO REDIRECTS!)
       downloadBtn.onclick = () => {
