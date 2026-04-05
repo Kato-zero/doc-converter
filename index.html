@@ -633,7 +633,7 @@ async function downloadPDFDirectly(url, filename) {
     return false;
   }
 }
-  
+
 async function convertToPDF() {
   if (!selectedFile) return;
   
@@ -682,9 +682,12 @@ async function convertToPDF() {
       `;
       
       // Set up direct download (NO REDIRECTS!)
+      downloadBtn.disabled = false;
       downloadBtn.onclick = () => {
         downloadPDFDirectly(conversionResult.Url, conversionResult.FileName);
       };
+      
+      convertBtn.disabled = false;
       
       setTimeout(() => {
         progressContainer.classList.remove('show');
